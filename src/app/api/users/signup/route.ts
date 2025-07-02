@@ -3,13 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connect } from "@/db/dbConfig";
 import User from "@/models/user.model";
+import { sendEmail } from "@/helpers/mailer";
 
 connect();
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody = request.json();
-    const { username, email, password }: any = reqBody;
+    const reqBody = await request.json();
+    const { username, email, password } = reqBody;
 
     // validation
 
@@ -34,6 +35,15 @@ export async function POST(request: NextRequest) {
     });
     const savedUser = await newUser.save();
     console.log(savedUser);
+
+    // send verification mail
+    await sendEmail({ email, emailType: "VERIFY", userId: savedUser._id });
+
+    return NextResponse.json({
+      message: "User registered successfully",
+      success: true,
+      savedUser,
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
